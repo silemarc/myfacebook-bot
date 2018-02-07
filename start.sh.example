@@ -1,4 +1,0 @@
-TELEGRAM_USER="your telegram login"
-#CHAT_ID="a chat id (optional)"
-APP_TOKEN="the token of your bot that BotFather gave you"
-node facebookbot.js
