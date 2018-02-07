@@ -14,6 +14,7 @@ function getUsage() {
         + "Available commands:\n"
         + "/threadlist - List the latest conversations you had with your friends.\n"
         + "/cancel - Cancel the current command.\n"
+        + "/friends - La lista degli amici su facebook."
         + "\n\nMore Informations: https://github.com/Liryna/FacebookBot";
 }
 
@@ -53,7 +54,14 @@ login({email: config.email, password: config.password}, function (err, api) {
                         if (err) return console.error(err);
                     });
             } else {
+                if (message.text == "/friends") {
+                    api.getFriendsList(function callback(err, arr) {
+                        if (err) return console.error(err);
+                        console.log("Tanti amici:", arr.length);
+                        console.log("Il primo:", arr[0]);
 
+                    });
+                }
                 if (message.text == "/threadlist") {
                     api.getThreadList(0, maxThreadNb, function callback(err, arr) {
 
@@ -153,21 +161,25 @@ login({email: config.email, password: config.password}, function (err, api) {
 
     //listen message from FB and forward to telegram
     api.listen(function callback(err, message) {
+        if (message) {
+            var forwardmsg = message.senderID + ": " + message.body;
+            if (message.isGroup) {
+                var forwardmsg = message.threadID + ": " + message.senderID + ": " + message.body;
+            }
 
-        var forwardmsg = message.senderName + ": " + message.body;
-        if (message.participantNames.length > 1) {
-            var forwardmsg = message.threadName + ": " + message.senderName + ": " + message.body;
+            if (owner.chat_id)
+                bot.sendMessage({chat_id: owner.chat_id, text: forwardmsg}, function (err, res) {
+                    if (err) return console.error(err);
+
+                    //save message id send and fb thread id for futur reply
+                    chat[res.message_id] = message.threadID;
+                })
+            else
+                console.log("where are you my owner ?");
+        } else {
+            console.log("no message from facebook");
         }
 
-        if (owner.chat_id)
-            bot.sendMessage({chat_id: owner.chat_id, text: forwardmsg}, function (err, res) {
-                if (err) return console.error(err);
-
-                //save message id send and fb thread id for futur reply
-                chat[res.message_id] = message.threadID;
-            })
-        else
-            console.log("where are you my owner ?");
     });
 });
 
