@@ -19,23 +19,23 @@ function getUsage() {
 }
 
 var chat = new Array();
+var friends = {};
 var threadListTmp;
 var currentThreadId;
 
-function reset() {
-    currentThreadId = undefined;
-    threadListTmp = undefined;
-}
-
 var config;
 config = JSON.parse(fs.readFileSync('config.json', 'utf-8'));
-login({email: config.email, password: config.password}, function (err, api) {
+
+
+login({email: config.email, password: config.password}, async function (err, api) {
     if (err) return console.error(err);
+
+    await retrieveFriendsFromFacebook(api);
 
     //listen telegram message
     var bot = new Bot({
         token: process.env.APP_TOKEN
-    }).on('message', function (message) {
+    }).on('message', async function (message) {
         if (message.from.username != owner.username)
             bot.sendMessage({
                 chat_id: message.chat.id,
@@ -55,15 +55,17 @@ login({email: config.email, password: config.password}, function (err, api) {
                     });
             } else {
                 if (message.text == "/friends") {
-                    api.getFriendsList(function callback(err, arr) {
-                        if (err) return console.error(err);
-                        console.log("Tanti amici:", arr.length);
-                        console.log("Il primo:", arr[0]);
-
-                    });
+                    const friendsSize = await retrieveFriendsFromFacebook(api);
+                    bot.sendMessage({
+                            chat_id: message.chat.id,
+                            text: "Ho recuperato la lista dei tuoi amici da facebook. Risultano essere " + friendsSize
+                        },
+                        function (err, ret) {
+                            if (err) return console.error(err);
+                        });
                 }
-                if (message.text == "/threadlist") {
-                    api.getThreadList(0, maxThreadNb, function callback(err, arr) {
+                else if (message.text == "/threadlist") {
+                    api.getThreadList(0, maxThreadNb, 'inbox', function callback(err, arr) {
 
                         var ft = require('./lib/findThread');
                         var fbids = ft.getParticipantsIds(arr);
@@ -160,26 +162,52 @@ login({email: config.email, password: config.password}, function (err, api) {
 
 
     //listen message from FB and forward to telegram
-    api.listen(function callback(err, message) {
-        if (message) {
-            var forwardmsg = message.senderID + ": " + message.body;
-            if (message.isGroup) {
-                var forwardmsg = message.threadID + ": " + message.senderID + ": " + message.body;
+    try {
+        api.listen(function callback(err, message) {
+            if (err) {
+                console.log("Errore nel messaggio ricevuto", err);
             }
 
-            if (owner.chat_id)
-                bot.sendMessage({chat_id: owner.chat_id, text: forwardmsg}, function (err, res) {
-                    if (err) return console.error(err);
+            if (message) {
+                var senderName = friends[message.senderID] || message.senderID;
+                var forwardmsg = senderName + ": " + message.body;
+                if (message.isGroup) {
+                    var forwardmsg = message.threadID + ": " + senderName + ": " + message.body;
+                }
 
-                    //save message id send and fb thread id for futur reply
-                    chat[res.message_id] = message.threadID;
-                })
-            else
-                console.log("where are you my owner ?");
-        } else {
-            console.log("no message from facebook");
-        }
+                if (owner.chat_id)
+                    bot.sendMessage({chat_id: owner.chat_id, text: forwardmsg}, function (err, res) {
+                        if (err) return console.error(err);
 
-    });
+                        //save message id send and fb thread id for futur reply
+                        chat[res.message_id] = message.threadID;
+                    })
+                else
+                    console.log("where are you my owner ?");
+            } else if (!err) {
+                console.log("no message from facebook");
+            }
+
+        });
+    } catch (e) {
+        console.log("Errore nel messaggio ricevuto", err);
+    }
 });
 
+const retrieveFriendsFromFacebook = async function (api) {
+    api.getFriendsList(async function callback(err, arr) {
+        if (err) {
+            return console.error(err);
+        }
+        for (let i = 0; i < arr.length; i++) {
+            friends[arr[i].userID] = arr[i].fullName;
+        }
+        return arr.length;
+
+    });
+};
+
+function reset() {
+    currentThreadId = undefined;
+    threadListTmp = undefined;
+}
