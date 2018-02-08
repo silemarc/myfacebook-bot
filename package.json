@@ -1,21 +1,21 @@
 {
   "name": "facebookbot",
-  "version": "0.1.2",
-  "description": "A Facebook bot for Telegram",
-  "main": "facebookbot",
-  "author": "Liryna <liryna.stark@gmail.com>",
+  "version": "0.2.0",
+  "description": "A Facebook bot for Telegram, forked from node-telegram-bot, by Liryna https://github.com/Liryna/FacebookBot",
+  "main": "myfacebookbot",
+  "author": "Silemarc <marco.melis@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Liryna/FacebookBot.git"
+    "url": "git+https://github.com/silemarc/myfacebook-bot.git"
   },
   "bugs": {
-    "url": "https://github.com/Liryna/FacebookBot/issues"
+    "url": "https://github.com/silemarc/myfacebook-bot/issues"
   },
-  "homepage": "https://github.com/Liryna/FacebookBot",
+  "homepage": "https://github.com/silemarc/myfacebook-bot",
   "dependencies": {
-    "node-telegram-bot": "^0.1.5",
-    "facebook-chat-api": "^1.0.3"
+    "facebook-chat-api": "git+https://github.com/silemarc/facebook-chat-api.git",
+    "node-telegram-bot": "^0.1.5"
   },
   "scripts": {}
 }

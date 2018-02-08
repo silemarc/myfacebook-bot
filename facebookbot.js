@@ -15,7 +15,7 @@ function getUsage() {
         + "/threadlist - List the latest conversations you had with your friends.\n"
         + "/cancel - Cancel the current command.\n"
         + "/friends - La lista degli amici su facebook."
-        + "\n\nMore Informations: https://github.com/Liryna/FacebookBot";
+        + "\n\nMore Informations: https://github.com/silemarc/myfacebook-bot";
 }
 
 var chat = new Array();
@@ -40,7 +40,7 @@ login({email: config.email, password: config.password}, async function (err, api
             bot.sendMessage({
                 chat_id: message.chat.id,
                 text: "You are not my owner! Go away ! \n"
-                + "- https://github.com/Liryna/FacebookBot"
+                + "- https://github.com/silemarc/myfacebook-bot"
             });
         else {
             if (owner.chat_id == undefined)
@@ -163,34 +163,31 @@ login({email: config.email, password: config.password}, async function (err, api
 
     //listen message from FB and forward to telegram
     try {
-        api.listen(function callback(err, message) {
-            if (err) {
-                console.log("Errore nel messaggio ricevuto", err);
-            }
+        if (!owner.chat_id) {
+            console.log("Errore! Nessuna chat telegram idetificata.");
+        } else {
+            api.listen(function callback(err, message) {
+                if (err) {
+                    console.log("Errore nel messaggio ricevuto", err);
+                    // throw new Error("Errore nel messaggio ricevuto");
+                }
+                else if (message) {
+                    const senderName = friends[message.senderID] || message.senderID;
 
-            if (message) {
-                var senderName = friends[message.senderID] || message.senderID;
-                var forwardmsg = senderName + ": " + message.body;
-                if (message.isGroup) {
-                    var forwardmsg = message.threadID + ": " + senderName + ": " + message.body;
+                    if (message.attachments.length > 0) {
+                        sendAttachmentsToTelegram(bot, senderName, message);
+                    } else {
+                        sendTextMessageToTelegram(bot, senderName, message, message.body);
+                    }
+                } else {
+                    console.log("no message from facebook");
                 }
 
-                if (owner.chat_id)
-                    bot.sendMessage({chat_id: owner.chat_id, text: forwardmsg}, function (err, res) {
-                        if (err) return console.error(err);
-
-                        //save message id send and fb thread id for futur reply
-                        chat[res.message_id] = message.threadID;
-                    })
-                else
-                    console.log("where are you my owner ?");
-            } else if (!err) {
-                console.log("no message from facebook");
-            }
-
-        });
+            }); //.catch(console.log("Errore molto grave nel messaggio ricevuto"));
+        }
     } catch (e) {
-        console.log("Errore nel messaggio ricevuto", err);
+        console.log("Errore grave nel messaggio ricevuto", err);
+        api.logout();
     }
 });
 
@@ -206,6 +203,68 @@ const retrieveFriendsFromFacebook = async function (api) {
 
     });
 };
+
+const sendTextMessageToTelegram = function (bot, senderName, message, text) {
+    let forwardmsg = senderName + ": " + text;
+    if (message.isGroup) {
+        forwardmsg = message.threadID + ": " + forwardmsg;
+    }
+
+    bot.sendMessage({chat_id: owner.chat_id, text: forwardmsg}, function (err, res) {
+        if (err) return console.error(err);
+
+        //save message id send and fb thread id for futur reply
+        chat[res.message_id] = message.threadID;
+    })
+};
+
+const sendPhotoToTelegram = function (bot, senderName, message, filePath, caption) {
+    let forwardmsg = senderName + ": " + caption;
+    if (message.isGroup) {
+        forwardmsg = message.threadID + ": " + forwardmsg;
+    }
+
+    bot.sendPhoto({chat_id: owner.chat_id, caption: forwardmsg, files: {photo: filePath}}, function (err, res) {
+        if (err) return console.error(err);
+
+        //save message id send and fb thread id for futur reply
+        chat[res.message_id] = message.threadID;
+    });
+};
+
+const sendAttachmentsToTelegram = function (bot, senderName, message) {
+    for (let i = 0; i < message.attachments.length; i++) {
+        const attachment = message.attachments[i];
+        // Send attachments as urls
+        if (!!attachment.url) {
+            sendTextMessageToTelegram(bot, senderName, message, attachment.type + " - " + attachment.url);
+        } else {
+            console.log(attachment.type, JSON.stringify(attachment));
+            const text = "invio allegati non ancora gestiti: " + attachment.type;
+            sendTextMessageToTelegram(bot, senderName, message, text);
+        }
+
+        // switch (attachment.type) {
+        //     case "file":
+        //         sendTextMessageToTelegram(bot, senderName, message, attachment.type + " - " + attachment.url);
+        //         break;
+        //     case "photo":
+        //         sendTextMessageToTelegram(bot, senderName, message, attachment.type + " - " + attachment.url);
+        //         break;
+        //     case "sticker":
+        //         sendTextMessageToTelegram(bot, senderName, message, attachment.type + " - " + attachment.url);
+        //         break;
+        //     case "animated_image":
+        //         sendTextMessageToTelegram(bot, senderName, message, attachment.type + " - " + attachment.url);
+        //         break;
+        //     default:
+        //         console.log(attachment.type, JSON.stringify(attachment));
+        //         const text = "invio allegati non ancora gestiti: " + attachment.type;
+        //         sendTextMessageToTelegram(bot, senderName, message, text);
+        // }
+    }
+
+}
 
 function reset() {
     currentThreadId = undefined;
