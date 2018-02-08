@@ -8,7 +8,7 @@ A Facebook bot for Telegram.
 - Create your Telegram bot, follow the instruction [here](https://core.telegram.org/bots#3-how-do-i-create-a-bot).
 - Clone this repository and install nodejs package.
 ```
-git clone https://github.com/Liryna/FacebookBot.git
+git clone https://github.com/silemarc/myfacebook-bot.git
 cd FacebookBot
 npm install
 ```
@@ -33,10 +33,11 @@ TELEGRAM_USER="Mario" APP_TOKEN="TOKEN" node facebookbot.js
 - The bot cannot establish a conversation to you directly, you need to write him first. Use your Telegram Client to say him "Hello".
 - The Available commands to send to your bot:
 ```
+/friends - get the list of your friends from facebook and put them in memory
 /threadlist - List the latest conversations you had with your friends.
 /cancel - Cancel the current command.
 ```
 
 ## Dependencies
 
-This bot use [Schmavery/facebook-chat-api](https://github.com/Schmavery/facebook-chat-api) and [depoio/node-telegram-bot](https://github.com/depoio/node-telegram-bot).
+This bot use [silemarc/facebook-chat-api](https://github.com/silemarc/facebook-chat-api) and [depoio/node-telegram-bot](https://github.com/depoio/node-telegram-bot).
