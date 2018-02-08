@@ -55,10 +55,9 @@ login({email: config.email, password: config.password}, async function (err, api
                     });
             } else {
                 if (message.text == "/friends") {
-                    const friendsSize = await retrieveFriendsFromFacebook(api);
                     bot.sendMessage({
                             chat_id: message.chat.id,
-                            text: "Ho recuperato la lista dei tuoi amici da facebook. Risultano essere " + friendsSize
+                            text: "Ho recuperato la lista dei tuoi amici da facebook. Ne ho trovati " + Object.keys(friends).length
                         },
                         function (err, ret) {
                             if (err) return console.error(err);
@@ -192,15 +191,16 @@ login({email: config.email, password: config.password}, async function (err, api
 });
 
 const retrieveFriendsFromFacebook = async function (api) {
-    api.getFriendsList(async function callback(err, arr) {
+
+    return await api.getFriendsList(async function callback(err, arr) {
         if (err) {
             return console.error(err);
         }
         for (let i = 0; i < arr.length; i++) {
             friends[arr[i].userID] = arr[i].fullName;
         }
+        console.log("Ho recuperato la lista dei tuoi amici da facebook. Risultano essere", arr.length);
         return arr.length;
-
     });
 };
 
